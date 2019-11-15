@@ -1,13 +1,14 @@
 # SimpleThreading
-## 简介
-当前项目是个c++11线程thread的简单封装，包含一个简单的优先任务队列和一个多线程执行器类。在实际项目中，通常都不是并行的，在需要并行的时候才会启动多个线程同时执行任务，这个工程就是为这个目的而设计的。实现非常简单，只是为了只使用c++11语法，同时兼容gcc4.8等相对较老的编译器，实现了如下功能以避免直接依赖于编译器特性和c++14,c++17的接口：
-1. 自定义实现了IdxSeq，GenSeq取代c++14的std::make_index_sequence\<N>等接口
-2. 自行实现了闭包在避免再lambda body中进行parameter pack expansion，因为gcc 4.8存在[BUG][1]
 
-实现没有太多内容，可以作为学习c++的素材
-## 用法
-使用时把threading.h拷贝到工程目录即可
-示例：
+This project is just a demostration of using C++11 to implement simple thread runner. In many real C++ projects, it's almost impossible to make the whole project parallel since the main routine is designed and implemented to be single thread. However, we could still use multi-thread feature of C++11 to accelerate program partially, this simple thread runner should help to do this.
+
+## features
+
+1. Custimized IdxSeq, GenSeq to prevent using C++14 std::make_index_sequence, etc...
+2. implement function closure using tuple to prevent parameter pack expansion in lambda body, since GCC 4.8([BUG][1]) do not support this.
+
+## usage
+Copy thread.h to project and write some thing like that:
 ```c++
 #include "threading.h"
 #include <iostream>
@@ -56,7 +57,7 @@ int main() {
     return 0;
 }
 ```
-实现闭包的部分：
+The main class to implement closure:
 ```c++
 template <typename Ret, typename Class, typename... Params> struct ClassFunctor {
     ClassFunctor(Ret (Class::*func)(Params...), Class &obj)
@@ -73,14 +74,14 @@ std::function<void()> ThreadFunc(Ret (Class::*func)(Params...), Class &obj, Para
     return [f, tp = std::make_tuple(std::forward<Params2>(param)...)] { ApplyThreadFunc(f, tp); };
 }
 ```
-其实只需要：
+Indeed, we could write:
 ```c++
 template <typename Ret, typename Class, typename... Params, typename... Params2>
 std::function<void()> ThreadFunc(Ret (Class::*func)(Params...), Class &obj, Params2 &&... param) {
     return [&, func] { return (obj.*func)(std::forward<Params>(param)...) };
 }
 ```
-但是很可惜，老点的编译器gcc 4.8不支持这样，所以只能自行打包。当然，上边也可以使用：
+However, GCC 4.8 do not support above code. We could also use
 ```c++
 template <typename Ret, typename Class, typename... Params, typename... Params2>
 std::function<void()> ThreadFunc(Ret (Class::*func)(Params...), Class &obj, Params2 &&... param) {
@@ -88,6 +89,6 @@ std::function<void()> ThreadFunc(Ret (Class::*func)(Params...), Class &obj, Para
     return [f, tp = std::make_tuple(std::forward<Params2>(param)...)] { std::apply(f, tp); };
 }
 ```
-只是std::apply是c++17的接口
+to implement closure. But the std::apply the interface is defined in C++17.
 
 [1]: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=55914
