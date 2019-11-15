@@ -89,6 +89,6 @@ std::function<void()> ThreadFunc(Ret (Class::*func)(Params...), Class &obj, Para
     return [f, tp = std::make_tuple(std::forward<Params2>(param)...)] { std::apply(f, tp); };
 }
 ```
-to implement closure. But the std::apply the interface is defined in C++17.
+to implement closure. But the std::apply interface is defined in C++17.
 
 [1]: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=55914
